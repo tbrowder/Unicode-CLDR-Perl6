@@ -1,7 +1,7 @@
 #!/usr/bin/env perl6
 
 use lib <../lib>;
-use Unicode::Perlcdrl;
+use Unicode::Perlcldr;
 
 # There are two optional parameters to this script -v which turns on
 # verbose logging and a file name which should be the last
@@ -14,40 +14,42 @@ if !@*ARGS {
     exit;
 }
 
-=begin comment
 
+=begin comment
 use FindBin;
 use File::Spec;
 use File::Path qw(make-path);
 use File::Copy qw(copy);
-use XML::XPath;
-use XML::XPath::Node::Text;
-use LWP::UserAgent;
 use Archive::Extract;
 use DateTime;
-use XML::Parser;
 use Text::ParseWords;
 use List::MoreUtils qw( any );
 use List::Util qw( min max );
 use Unicode::Regex::Set();
 use lib $FindBin::Bin;
+use XML::XPath::Node::Text;
+use LWP::UserAgent;
 =end comment
 
-=finish
+use XML::Parser;
+use XML::XPath;
+use LWP::Simple;
 
 my $start-time = DateTime.now();
 
 our $verbose = 0;
-$verbose = 1 if grep /-v/, @ARGV;
-@ARGV = grep !/-v/, @ARGV;
+$verbose = 1 if grep /'-v'/, @*ARGS;
+@*ARGS = grep !/'-v'/, @*ARGS;
 
 use version;
-my $API-VERSION = 0;     # This will get bumped if a release is not backwards compatible with the previous release
-my $CLDR-VERSION = '34'; # This needs to match the revision number of the CLDR revision being generated against
-my $REVISION = 0;        # This is the build number against the CLDR revision
-my $TRIAL-REVISION = ''; # This is the trial revision for unstable releases. Set to '' for the first trial release after that start counting from 1
+my $API-VERSION    = 0;    # This will get bumped if a release is not backwards compatible with the previous release
+my $CLDR-VERSION   = '34'; # This needs to match the revision number of the CLDR revision being generated against
+my $REVISION       = 0;    # This is the build number against the CLDR revision
+my $TRIAL-REVISION = '';   # This is the trial revision for unstable releases. Set to '' for the first 
+                           # trial release after that start counting from 1;
 
-our $VERSION = version->parse(join '.', $API-VERSION, ($CLDR-VERSION=~s/^([^.]+).*/$1/r), $REVISION);
+$CLDR-VERSION ~~ s/^ ([^.]+).*/$0/; #r;
+our $VERSION  = join '.', $API-VERSION, $CLDR-VERSION, $REVISION;
 my $CLDR-PATH = $CLDR-VERSION;
 
 # $RELEASE-STATUS relates to the CPAN status it can be one of
@@ -682,21 +684,24 @@ foreach my $region (sort keys %$region-contains) {
 }
 
 # Language bundles
-foreach my $language (sort keys %$languages) {
-	next if $language =~ /[-@]/;
-	my @files = get-language-bundle-data(ucfirst lc $language);
+#foreach my $language (sort keys %$languages) {
+for %languages.keys.sort -> $language {
+	next if $language ~~ /<[@-]>/;
+	my @files = get-language-bundle-data(tc $language);
 	next unless @files;
-	push @files, get-language-bundle-data(ucfirst lc "${language}.pm");
-	my @packages = convert-files-to-packages(\@files);
-	build-bundle($out-directory, \@packages, $language );
+	push @files, get-language-bundle-data(tc "{$language}.pm");
+	my @packages = convert-files-to-packages(@files);
+	build-bundle($out-directory, @packages, $language);
 }
 
-sub convert-files-to-packages {
-	my $files = shift;
+sub convert-files-to-packages(@files) {
+	#my $files = shift;
 	my @packages;
 
-	foreach my $file-name (@$files) {
-		open my $file, $file-name or die "Bang $file-name: $!";
+	#foreach my $file-name (@$files) {
+	for @files -> $filename {
+		#open my $file, $file-name or die "Bang $file-name: $!";
+                my $fh = 
 		my $package;
 		($package) = (<$file> =~ /^package (.+);$/)
 			until $package;

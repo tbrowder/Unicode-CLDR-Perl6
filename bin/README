@@ -1,0 +1,10 @@
+# The Perl 5 File 'mkcldr.pl' was downloaded ffrom github:
+#
+#   $ wget https://github.com/ThePilgrim/perlcldr/blob/master/Locale-CLDR/mkcldr.pl
+#
+# It was copied to:
+#
+#
+#   gen-lang-pm.p6
+#
+# for porting to Perl 6.
